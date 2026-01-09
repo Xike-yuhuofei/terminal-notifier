@@ -1,0 +1,56 @@
+# PowerShell module artifacts
+*.psm1.bak
+*.ps1.bak
+
+# Log files
+*.log
+debug-hook.log
+
+# State files
+.states/
+*.state
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+
+# Test outputs
+test-output/
+*.test.log
+
+# User-specific configuration
+.claude/settings.local.json
+.claude/.user.json
+
+# IDE files
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build artifacts
+bin/
+obj/
+dist/
+build/
+
+# Node modules (if any)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# Claude Code specific
+.claude/cache/
+.claude/sessions/
+.claude/transcripts/

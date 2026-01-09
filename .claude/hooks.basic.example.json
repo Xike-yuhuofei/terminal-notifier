@@ -1,0 +1,43 @@
+{
+  "_comment": "Terminal Notifier 基础版 Hook 配置示例",
+  "_description": "基础版：音效 + Toast + 自定义窗口标题（轻量级）",
+  "_features": [
+    "✅ 音效通知（系统提示音）",
+    "✅ Windows Toast 通知",
+    "✅ 自定义窗口标题（支持 ccs 命令设置的窗口名称）",
+    "❌ 状态管理",
+    "❌ 持久化标题",
+    "❌ OSC 标签页颜色"
+  ],
+  "_use_case": "适用于：快速原型开发、单窗口日常使用、性能敏感场景",
+  "_performance": "执行速度 < 200ms，依赖 3 个模块",
+  "_window_name_note": "使用 ccs 命令启动时，可以设置自定义窗口名称，例如：ccs glm \"编译测试\"",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:/Users/Xike/.claude/tools/terminal-notifier/scripts/hooks/stop-basic.ps1\"",
+            "timeout": 5000,
+            "_description": "基础版 Stop Hook：音效 + Toast + 自定义窗口标题"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:/Users/Xike/.claude/tools/terminal-notifier/scripts/hooks/notification-basic.ps1\"",
+            "timeout": 5000,
+            "_description": "基础版 Notification Hook：音效 + Toast + 自定义窗口标题"
+          }
+        ]
+      }
+    ]
+  },
+  "_usage": "使用方法：复制此文件内容到用户级配置文件 C:\\Users\\Xike\\.claude\\settings.json，然后重启 Claude Code",
+  "_docs": "详细文档：docs/BASIC_VERSION_WITH_WINDOW_NAME.md"
+}

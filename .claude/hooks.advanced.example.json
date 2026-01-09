@@ -1,0 +1,40 @@
+{
+  "_comment": "Terminal Notifier 高级版 Hook 配置示例",
+  "_description": "高级版：完整功能（音效 + Toast + 状态管理 + 持久化标题）",
+  "_features": [
+    "✅ 音效通知（系统提示音）",
+    "✅ Windows Toast 通知",
+    "✅ 状态管理（红/蓝/黄/黑状态）",
+    "✅ 持久化标题显示",
+    "✅ OSC 标签页颜色"
+  ],
+  "_use_case": "适用于：生产环境监控、多窗口协作、调试和故障排查",
+  "_performance": "执行速度 < 500ms，依赖 5 个模块",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:/Users/Xike/.claude/tools/terminal-notifier/scripts/hooks/stop.ps1\"",
+            "timeout": 5000,
+            "_description": "高级版 Stop Hook：完整功能"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:/Users/Xike/.claude/tools/terminal-notifier/scripts/hooks/notification.ps1\"",
+            "timeout": 5000,
+            "_description": "高级版 Notification Hook：完整功能"
+          }
+        ]
+      }
+    ]
+  },
+  "_usage": "使用方法：复制此文件内容到 .claude/settings.local.json，然后重启 Claude Code"
+}

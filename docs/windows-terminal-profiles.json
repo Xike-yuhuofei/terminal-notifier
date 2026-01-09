@@ -1,0 +1,41 @@
+{
+    "profiles": {
+        "list": [
+            {
+                "guid": "{00000000-0000-0000-0000-000000000001}",
+                "name": "Claude - 编译测试",
+                "commandline": "C:/Program Files/Git/bin/bash.exe -c \"export CLAUDE_WINDOW_NAME='编译测试' && cd /d/Projects/Backend_CPP && exec bash\"",
+                "icon": "🔨",
+                "tabTitle": "编译测试"
+            },
+            {
+                "guid": "{00000000-0000-0000-0000-000000000002}",
+                "name": "Claude - 单元测试",
+                "commandline": "C:/Program Files/Git/bin/bash.exe -c \"export CLAUDE_WINDOW_NAME='单元测试' && cd /d/Projects/Backend_CPP && exec bash\"",
+                "icon": "🧪",
+                "tabTitle": "单元测试"
+            },
+            {
+                "guid": "{00000000-0000-0000-0000-000000000003}",
+                "name": "Claude - 代码审查",
+                "commandline": "C:/Program Files/Git/bin/bash.exe -c \"export CLAUDE_WINDOW_NAME='代码审查' && cd /d/Projects/Backend_CPP && exec bash\"",
+                "icon": "👀",
+                "tabTitle": "代码审查"
+            },
+            {
+                "guid": "{00000000-0000-0000-0000-000000000004}",
+                "name": "Claude - 性能优化",
+                "commandline": "C:/Program Files/Git/bin/bash.exe -c \"export CLAUDE_WINDOW_NAME='性能优化' && cd /d/Projects/Backend_CPP && exec bash\"",
+                "icon": "⚡",
+                "tabTitle": "性能优化"
+            },
+            {
+                "guid": "{00000000-0000-0000-0000-000000000005}",
+                "name": "Claude - 重构工作",
+                "commandline": "C:/Program Files/Git/bin/bash.exe -c \"export CLAUDE_WINDOW_NAME='重构工作' && cd /d/Projects/Backend_CPP && exec bash\"",
+                "icon": "🔧",
+                "tabTitle": "重构工作"
+            }
+        ]
+    }
+}
