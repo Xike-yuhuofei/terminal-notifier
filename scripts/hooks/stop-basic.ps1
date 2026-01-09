@@ -47,7 +47,35 @@ try {
 
     # === BASIC VERSION: Sound + Toast + Window Title ===
 
-    # 1. Display custom window name in terminal title (using TabTitleManager)
+    # 1. Build title
+    if ($windowName -and $windowName -ne $projectName) {
+        $title = "[⚠️ $windowName] 需要输入 - $projectName"
+    } else {
+        $title = "[⚠️] 需要输入 - $projectName"
+    }
+
+    # 2. Write to persistent state file (for UserPromptSubmit Hook to clear)
+    try {
+        $stateDir = Join-Path $ModuleRoot ".states"
+        if (-not (Test-Path $stateDir)) {
+            New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+        }
+
+        $titleFile = Join-Path $stateDir "stop-title.txt"
+        $titleData = @{
+            title = $title
+            projectName = $projectName
+            windowName = $windowName
+            timestamp = (Get-Date).ToString("o")
+        } | ConvertTo-Json -Compress
+
+        $titleData | Out-File -FilePath $titleFile -Encoding UTF8 -Force
+    }
+    catch {
+        # State file write failure should not block Hook execution
+    }
+
+    # 3. Display custom window name in terminal title (using TabTitleManager)
     try {
         if ($windowName -and $windowName -ne $projectName) {
             Set-TabTitleForHook -HookType "Stop" -ProjectName $projectName -WindowName $windowName
@@ -64,7 +92,7 @@ try {
         }
     }
 
-    # 2. Ring bell for attention (1 time)
+    # 4. Ring bell for attention (1 time)
     Invoke-TerminalBell -Times 1 -SoundType 'Asterisk'
 
     # 3. Send Windows Toast notification

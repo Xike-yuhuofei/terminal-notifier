@@ -49,6 +49,28 @@ try {
     } else {
         "[⚠️] 需要输入 - $projectName"
     }
+
+    # Write to persistent state file (for UserPromptSubmit Hook to clear)
+    try {
+        $stateDir = Join-Path $ModuleRoot ".states"
+        if (-not (Test-Path $stateDir)) {
+            New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+        }
+
+        $titleFile = Join-Path $stateDir "stop-title.txt"
+        $titleData = @{
+            title = $displayTitle
+            projectName = $projectName
+            windowName = $windowName
+            timestamp = (Get-Date).ToString("o")
+        } | ConvertTo-Json -Compress
+
+        $titleData | Out-File -FilePath $titleFile -Encoding UTF8 -Force
+    }
+    catch {
+        # State file write failure should not block Hook execution
+    }
+
     Show-TitleNotification -Title $displayTitle -Type "Stop" -AutoClear $false
 
     # Legacy: Set visual notification for compatibility
