@@ -76,15 +76,8 @@ try {
         # Toast failure should not block Hook execution
     }
 
-    # Optional: Clear title after a short delay (5 seconds)
-    Start-Sleep -Seconds 5
-    try {
-        Set-TabTitle -Title "[...] Claude - $projectName"
-    }
-    catch {
-        # Fallback to direct RawUI setting
-        $Host.UI.RawUI.WindowTitle = "[...] Claude - $projectName"
-    }
+    # Note: Notification title will be automatically cleared by the shell
+    # No need to set a persistent "clear" title
 
     exit 0
 }

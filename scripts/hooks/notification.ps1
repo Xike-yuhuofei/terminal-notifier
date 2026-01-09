@@ -72,8 +72,9 @@ try {
 
     # Return to blue (ready) state
     Set-CurrentState -State "blue" -Reason "Ready" -ProjectName $projectName
-    $title = "[...] Claude - $projectName"
-    Set-NotificationVisual -State "blue" -Title $title | Out-Null
+
+    # Only restore tab color, don't set a persistent title
+    # The title will be managed by other hooks or the shell itself
 
     exit 0
 }
