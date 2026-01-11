@@ -164,60 +164,34 @@ function Test-OscSupport {
     .EXAMPLE
         if (Test-OscSupport) { Send-OscTitle "Hello" }
     #>
-    # Priority 1: Check for terminals that DEFINITELY support OSC sequences
+    # 优先级1：检测明确支持OSC序列的终端
 
-    # Check if in Windows Terminal (even if running inside Git Bash)
+    # Windows Terminal（即使在Git Bash中）
     if ($env:WT_SESSION) {
-        # Windows Terminal supports OSC sequences regardless of shell
         return $true
     }
 
-    # Check if in VS Code integrated terminal
+    # VS Code集成终端
     if ($env:TERM_PROGRAM -eq "vscode") {
         return $true
     }
 
-    # Check if in ConEmu/Cmder
+    # ConEmu/Cmder
     if ($env:ConEmuANSI -eq "ON") {
         return $true
     }
 
-    # Check for iTerm2
+    # iTerm2
     if ($env:TERM_PROGRAM -eq "iTerm.app") {
         return $true
     }
 
-    # Check for other terminals via COLORTERM
+    # 其他终端（通过COLORTERM检测）
     if ($env:COLORTERM -eq "truecolor" -or $env:COLORTERM -eq "24bit") {
         return $true
     }
 
-    # Priority 2: Check for terminals with LIMITED or NO OSC support
-
-    # Check for Git Bash/Mintty environment
-    # Git Bash typically sets MSYSTEM (e.g., MSYSTEM=MINGW64) or has bash in SHELL
-    if ($env:MSYSTEM -or ($env:SHELL -and $env:SHELL -like "*bash*")) {
-        # Git Bash/Mintty has limited OSC support.
-        # However, if we're in Windows Terminal WITH Git Bash shell, WT_SESSION should have been caught above.
-        # If we reach here, it means we're in native Git Bash/Mintty without WT_SESSION.
-        return $false
-    }
-
-    # Priority 3: Unknown environment - try to detect
-
-    # Check if we can access console properties (indicates modern terminal)
-    try {
-        $consoleWidth = [Console]::WindowWidth
-        $consoleHeight = [Console]::WindowHeight
-        # If we can read console properties, it's likely a modern terminal
-        # but we'll be conservative and return false unless explicitly detected
-    }
-    catch {
-        # Cannot access console, likely limited terminal
-    }
-
-    # Default: conservative approach for unknown terminals
-    # Return false to use legacy methods, which have better fallback handling
+    # 默认：保守策略
     return $false
 }
 

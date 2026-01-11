@@ -47,6 +47,11 @@ function Set-PersistentTitle {
         $script:PersistentTitle = "[$($env:CLAUDE_ENV_NAME)] $Title"
     }
 
+    # 通知bash：PersistentTitle已激活
+    $stateDir = Join-Path (Split-Path $PSScriptRoot -Parent) ".states"
+    $persistentTitleActiveFile = Join-Path $stateDir "persistent-title-active.txt"
+    "active" | Out-File -FilePath $persistentTitleActiveFile -Force -Encoding UTF8
+
     # 启动后台更新线程
     if ($null -eq $script:TitleUpdateThread -or $script:TitleUpdateThread.IsCompleted) {
         $script:KeepRunning = $true
@@ -69,15 +74,17 @@ function Start-PersistentTitleUpdater {
     $startTime = Get-Date
     $endTime = if ($Duration -gt 0) { $startTime.AddSeconds($Duration) } else { [DateTime]::MaxValue }
 
+    # 检测OSC支持（一次性检测）
+    $useOsc = Test-OscSupport
+
     while ($script:KeepRunning -and (Get-Date) -lt $endTime) {
         # 持续刷新标题（防止被覆盖）
         if ($script:PersistentTitle) {
-            # 使用健壮的标题设置方法（支持Git Bash和其他环境）
-            $titleSuccess = Set-TermTitleLegacy -Title $script:PersistentTitle
+            # 优先使用OSC序列（与Git Bash兼容）
+            if ($useOsc) {
+                Send-OscTitle -Title $script:PersistentTitle | Out-Null
 
-            # 如果支持OSC序列，设置标签页颜色
-            # 使用Test-OscSupport而不是直接检查环境变量
-            if (Test-OscSupport) {
+                # 设置标签页颜色
                 $colorMap = @{
                     "red"    = "red"
                     "yellow" = "yellow"
@@ -86,8 +93,11 @@ function Start-PersistentTitleUpdater {
                     "default" = "default"
                 }
                 $tabColor = $colorMap[$script:PersistentState]
-                # 使用Send-OscTabColor而不是直接[Console]::Write
-                $colorSuccess = Send-OscTabColor -Color $tabColor -Blink ($script:PersistentState -eq "red")
+                Send-OscTabColor -Color $tabColor -Blink ($script:PersistentState -eq "red") | Out-Null
+            }
+            else {
+                # Fallback到传统方法
+                Set-TermTitleLegacy -Title $script:PersistentTitle | Out-Null
             }
         } elseif ($script:EnvironmentNameEnabled -and $env:CLAUDE_ENV_NAME) {
             # 🔴 启用了环境名显示时，显示 [GLM] 项目名
@@ -115,6 +125,13 @@ function Clear-PersistentTitle {
     $script:KeepRunning = $false
     $script:PersistentTitle = ""
     $script:PersistentState = ""
+
+    # 通知bash：PersistentTitle已清除
+    $stateDir = Join-Path (Split-Path $PSScriptRoot -Parent) ".states"
+    $persistentTitleActiveFile = Join-Path $stateDir "persistent-title-active.txt"
+    if (Test-Path $persistentTitleActiveFile) {
+        Remove-Item -Path $persistentTitleActiveFile -Force -ErrorAction SilentlyContinue
+    }
 
     # 恢复默认标题
     $currentDir = Split-Path -Leaf (Get-Location).Path

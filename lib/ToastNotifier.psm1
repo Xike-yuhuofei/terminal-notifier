@@ -130,15 +130,17 @@ function Send-StopToast {
         [string]$ProjectName = ""
     )
 
+    # 简化格式：WindowName - ProjectName
     $title = if ($ProjectName) {
-        "[$WindowName] 需要输入 - $ProjectName"
+        "$WindowName - $ProjectName"
     } else {
-        "[$WindowName] 需要输入"
+        $WindowName
     }
 
-    $message = "Claude Code 正在等待您的响应`n[Stop Hook v2.0]"
+    # 消息：仅Hook类型和版本号
+    $message = "Stop Hook v2.0"
 
-    Send-WindowsToast -Title $title -Message $message -SoundType "Silent"  # 禁用音效
+    Send-WindowsToast -Title $title -Message $message -SoundType "Silent"
 }
 
 function Send-NotificationToast {
@@ -159,15 +161,17 @@ function Send-NotificationToast {
         [string]$ProjectName = ""
     )
 
+    # 简化格式：WindowName - ProjectName
     $title = if ($ProjectName) {
-        "[$WindowName] 通知 - $ProjectName"
+        "$WindowName - $ProjectName"
     } else {
-        "[$WindowName] 通知"
+        $WindowName
     }
 
-    $message = "Claude Code 有新通知`n[Notification Hook v2.0]"
+    # 消息：仅Hook类型和版本号
+    $message = "Notification Hook v2.0"
 
-    Send-WindowsToast -Title $title -Message $message -SoundType "Silent"  # 禁用音效
+    Send-WindowsToast -Title $title -Message $message -SoundType "Silent"
 }
 
 # Export functions

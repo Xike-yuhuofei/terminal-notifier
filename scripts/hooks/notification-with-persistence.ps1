@@ -34,6 +34,19 @@ try {
     $windowName = ""
     try {
         $windowName = Get-WindowDisplayName
+
+        # 如果Get-WindowDisplayName返回项目名称，尝试从保存的文件读取自定义标题
+        if ($windowName -eq $projectName) {
+            $stateDir = Join-Path $ModuleRoot ".states"
+            $originalTitleFile = Join-Path $stateDir "original-title.txt"
+
+            if (Test-Path $originalTitleFile) {
+                $savedTitle = Get-Content $originalTitleFile -Raw -Encoding UTF8 | ForEach-Object { $_.Trim() }
+                if ($savedTitle -and $savedTitle -ne "" -and $savedTitle -ne $projectName) {
+                    $windowName = $savedTitle
+                }
+            }
+        }
     }
     catch {
         # Fallback to project name
