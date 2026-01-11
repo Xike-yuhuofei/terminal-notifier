@@ -49,7 +49,7 @@ try {
     }
 
     # Clean up old state files
-    Clear-OldStateFiles -MaxAgeHours 24
+    Clear-OldStateFiles -MaxAgeHours 4
 
     # 保存 ccs 设置的原始标题（供 Notification 和 SessionEnd 使用）
     $stateDir = Join-Path $ModuleRoot ".states"
