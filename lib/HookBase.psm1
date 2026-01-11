@@ -54,7 +54,15 @@ function Import-HookModules {
     foreach ($moduleName in $Modules) {
         $modulePath = Join-Path $LibPath "$moduleName.psm1"
         if (Test-Path $modulePath) {
-            Import-Module $modulePath -Force -ErrorAction SilentlyContinue
+            try {
+                Import-Module $modulePath -Force -Global -ErrorAction Stop
+            }
+            catch {
+                # Log error to debug file
+                $debugLog = Join-Path (Split-Path $LibPath -Parent) ".states/hook-debug.log"
+                $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+                "[$ts] Import-HookModules ERROR: Failed to import $moduleName : $($_.Exception.Message)" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+            }
         }
     }
 }
@@ -110,7 +118,7 @@ function Get-WindowNameWithFallback {
     return $windowName
 }
 
-function Get-OriginalTitle {
+function Get-OriginalTitleFromFile {
     <#
     .SYNOPSIS
         Read original title from state file
@@ -119,7 +127,7 @@ function Get-OriginalTitle {
     .OUTPUTS
         System.String. Original title or empty string
     .EXAMPLE
-        $title = Get-OriginalTitle -ModuleRoot $moduleRoot
+        $title = Get-OriginalTitleFromFile -ModuleRoot $moduleRoot
     #>
     param(
         [Parameter(Mandatory=$true)]
@@ -279,7 +287,7 @@ Export-ModuleMember -Function @(
     'Initialize-HookEnvironment',
     'Import-HookModules',
     'Get-WindowNameWithFallback',
-    'Get-OriginalTitle',
+    'Get-OriginalTitleFromFile',
     'Set-OriginalTitle',
     'Remove-OriginalTitle',
     'Build-NotificationTitle',

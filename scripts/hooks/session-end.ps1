@@ -35,7 +35,7 @@ try {
     Set-CurrentState -State "black" -Reason "Session ended" -ProjectName $projectName
 
     # 读取并恢复原始标题（ccs 设置的）
-    $originalTitle = Get-OriginalTitle -ModuleRoot $ModuleRoot
+    $originalTitle = Get-OriginalTitleFromFile -ModuleRoot $ModuleRoot
 
     if ($originalTitle) {
         # 恢复到原始标题

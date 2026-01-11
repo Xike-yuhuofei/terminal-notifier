@@ -51,7 +51,7 @@ function Send-WindowsToast {
         [string]$AppLogo = "",
 
         [ValidateSet("Default", "Alarm", "Call", "Reminder", "SMS", "Silent")]
-        [string]$SoundType = "Silent",  # 禁用 Toast 音效，避免叠加
+        [string]$SoundType = "Default",  # 启用 Toast 音效
 
         [switch]$LongDuration = $true  # 默认使用长持续时间 (~25秒)
     )
@@ -64,12 +64,12 @@ function Send-WindowsToast {
         Import-Module (Join-Path $PSScriptRoot "NotificationEnhancements.psm1") -Force
 
         $bellType = switch ($SoundType) {
-            "Alarm" { "Asterisk" }
+            "Alarm" { "Exclamation" }
             "Call" { "Asterisk" }
             default { "Asterisk" }
         }
 
-        #         Invoke-TerminalBell -Times 2 -SoundType $bellType
+        Invoke-TerminalBell -Times 2 -SoundType $bellType
         Invoke-TitleFlash -Title $Title -Times 3
 
         return $false
@@ -106,7 +106,7 @@ function Send-WindowsToast {
 
         # Fallback to sound notification
         Import-Module (Join-Path $PSScriptRoot "NotificationEnhancements.psm1") -Force
-        #         Invoke-TerminalBell -Times 2 -SoundType "Asterisk"
+        Invoke-TerminalBell -Times 2 -SoundType "Asterisk"
 
         return $false
     }

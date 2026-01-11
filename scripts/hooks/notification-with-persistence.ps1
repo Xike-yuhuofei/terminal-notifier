@@ -18,28 +18,54 @@ $ModuleRoot = Resolve-Path (Join-Path $ScriptDir "../..")
 $LibPath = Join-Path $ModuleRoot "lib"
 
 # Import HookBase module first
-Import-Module (Join-Path $LibPath "HookBase.psm1") -Force -ErrorAction SilentlyContinue
+Import-Module (Join-Path $LibPath "HookBase.psm1") -Force -Global -ErrorAction SilentlyContinue
 
-# Import other required modules
-Import-HookModules -LibPath $LibPath -Modules @(
-    "NotificationEnhancements",
-    "ToastNotifier",
-    "TabTitleManager"
-)
+# Import other required modules DIRECTLY (not via Import-HookModules to avoid scope issues)
+$modulesToImport = @("NotificationEnhancements", "ToastNotifier", "TabTitleManager")
+foreach ($mod in $modulesToImport) {
+    $modPath = Join-Path $LibPath "$mod.psm1"
+    if (Test-Path $modPath) {
+        Import-Module $modPath -Force -Global -ErrorAction SilentlyContinue
+    }
+}
 
 try {
+    # === DEBUG LOGGING START ===
+    $stateDir = Join-Path $ModuleRoot ".states"
+    if (-not (Test-Path $stateDir)) {
+        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+    }
+    $debugLog = Join-Path $stateDir "hook-debug.log"
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+    "[$timestamp] === Notification Hook START ===" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+    "[$timestamp] ModuleRoot: $ModuleRoot" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+    # === DEBUG LOGGING END ===
+
     # Initialize environment
     $inputJson = [Console]::In.ReadToEnd()
+
+    # DEBUG: Log input
+    "[$timestamp] Input JSON: $inputJson" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+
     $hookData = $inputJson | ConvertFrom-Json
     $cwd = $hookData.cwd
     $projectName = Split-Path -Leaf $cwd
 
+    # DEBUG: Log parsed data
+    "[$timestamp] CWD: $cwd, Project: $projectName" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+
     # Get window name with fallback
     $windowName = Get-WindowNameWithFallback -ProjectName $projectName -ModuleRoot $ModuleRoot
 
+    # DEBUG: Log window name
+    "[$timestamp] WindowName: $windowName" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+
     # Build title
-    $originalTitle = Get-OriginalTitle -ModuleRoot $ModuleRoot
+    $originalTitle = Get-OriginalTitleFromFile -ModuleRoot $ModuleRoot
     $title = Build-NotificationTitle -WindowName $windowName -ProjectName $projectName -OriginalTitle $originalTitle
+
+    # DEBUG: Log title
+    "[$timestamp] OriginalTitle: $originalTitle, Title: $title" | Out-File -FilePath $debugLog -Append -Encoding UTF8
 
     # === 2. 尝试即时设置标题（可能无效，因为是在子进程中）===
     try {
@@ -86,6 +112,9 @@ try {
     # === 4. 播放音效 ===
     Invoke-TerminalBell -Times 1 -SoundType 'Asterisk'
 
+    # DEBUG: Log bell
+    "[$timestamp] Bell played" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+
     # === 5. 发送 Toast 通知 ===
     Invoke-ToastWithFallback -ScriptBlock {
         if ($originalTitle) {
@@ -95,9 +124,18 @@ try {
         }
     }
 
+    # DEBUG: Log toast
+    "[$timestamp] Toast sent" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+    "[$timestamp] === Notification Hook END ===" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+
     exit 0
 }
 catch {
+    # DEBUG: Log error
+    $errorLog = Join-Path $ModuleRoot ".states/hook-debug.log"
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+    "[$timestamp] ERROR: $($_.Exception.Message)" | Out-File -FilePath $errorLog -Append -Encoding UTF8
+    "[$timestamp] Stack: $($_.ScriptStackTrace)" | Out-File -FilePath $errorLog -Append -Encoding UTF8
     # 不干扰 Claude 的 notification 行为
     exit 0
 }
