@@ -136,7 +136,7 @@ function Send-StopToast {
         "[$WindowName] 需要输入"
     }
 
-    $message = "Claude Code 正在等待您的响应"
+    $message = "Claude Code 正在等待您的响应`n[Stop Hook v2.0]"
 
     Send-WindowsToast -Title $title -Message $message -SoundType "Silent"  # 禁用音效
 }
@@ -165,7 +165,7 @@ function Send-NotificationToast {
         "[$WindowName] 通知"
     }
 
-    $message = "Claude Code 有新通知"
+    $message = "Claude Code 有新通知`n[Notification Hook v2.0]"
 
     Send-WindowsToast -Title $title -Message $message -SoundType "Silent"  # 禁用音效
 }

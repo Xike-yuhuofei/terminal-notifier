@@ -62,9 +62,17 @@ try {
     # 优先保存 CLAUDE_WINDOW_NAME，否则保存当前标题
     if ($env:CLAUDE_WINDOW_NAME) {
         $env:CLAUDE_WINDOW_NAME | Out-File -FilePath $originalTitleFile -Encoding UTF8 -Force
+
+        # 设置会话开始标题（显示自定义标题）
+        $sessionTitle = "[$($env:CLAUDE_WINDOW_NAME)] Ready - $projectName"
+        Set-PersistentTitle -Title $sessionTitle -State "blue" -Duration 0
     } else {
         $currentTitle = $Host.UI.RawUI.WindowTitle
         $currentTitle | Out-File -FilePath $originalTitleFile -Encoding UTF8 -Force
+
+        # 设置默认会话开始标题
+        $sessionTitle = "[Ready] - $projectName"
+        Set-PersistentTitle -Title $sessionTitle -State "blue" -Duration 0
     }
 
     # Output result for Claude Code
