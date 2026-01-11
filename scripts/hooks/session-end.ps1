@@ -52,6 +52,9 @@ try {
 
     # Clean up state file for this session
     Remove-StateFile
+    
+    # Clean up old state files from other sessions
+    Clear-OldStateFiles -MaxAgeHours 4
 
     exit 0
 }

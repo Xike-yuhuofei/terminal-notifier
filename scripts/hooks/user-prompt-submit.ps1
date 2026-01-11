@@ -32,6 +32,13 @@ try {
         # 用户提交新提示，清除所有标题（不管是 Stop 还是 Notification）
         Remove-Item $titleFile -Force -ErrorAction SilentlyContinue
     }
+    
+    # Periodic cleanup (1 in 10 chance to reduce overhead)
+    $cleanupRandom = Get-Random -Minimum 1 -Maximum 11
+    if ($cleanupRandom -eq 1) {
+        Import-Module (Join-Path $LibPath "StateManager.psm1") -Force -ErrorAction SilentlyContinue
+        Clear-OldStateFiles -MaxAgeHours 4
+    }
 
     exit 0
 }

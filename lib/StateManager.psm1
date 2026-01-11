@@ -266,7 +266,7 @@ function Clear-OldStateFiles {
         Clear-OldStateFiles -MaxAgeHours 48
     #>
     param(
-        [int]$MaxAgeHours = 24
+        [int]$MaxAgeHours = 4
     )
 
     if (-not $script:StateDir) {
