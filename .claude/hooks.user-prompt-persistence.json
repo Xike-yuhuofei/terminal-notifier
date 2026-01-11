@@ -1,0 +1,42 @@
+{
+  "_comment": "UserPromptSubmit 持久化标题配置示例",
+  "_description": "此配置使用 UserPromptSubmit Hook 来持久化标题，在主 Shell 进程中设置标题，真正影响 Windows Terminal 显示",
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:/Users/Xike/.claude/tools/terminal-notifier/scripts/hooks/stop-with-persistence.ps1\"",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:/Users/Xike/.claude/tools/terminal-notifier/scripts/hooks/notification-with-persistence.ps1\"",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:/Users/Xike/.claude/tools/terminal-notifier/scripts/hooks/user-prompt-submit.ps1\"",
+            "timeout": 3000
+          }
+        ]
+      }
+    ]
+  }
+}

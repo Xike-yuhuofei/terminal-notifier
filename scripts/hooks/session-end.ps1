@@ -29,13 +29,26 @@ try {
     # Set final state before cleanup
     Set-CurrentState -State "black" -Reason "Session ended" -ProjectName $projectName
 
-    # Reset visual to default
-    $title = "[-] Bye - $projectName"
-    Set-NotificationVisual -State "default" -Title $title | Out-Null
+    # 读取并恢复原始标题（ccs 设置的）
+    $stateDir = Join-Path $ModuleRoot ".states"
+    $originalTitleFile = Join-Path $stateDir "original-title.txt"
 
-    # Brief display then reset title
-    Start-Sleep -Milliseconds 500
-    Reset-TerminalVisual | Out-Null
+    if (Test-Path $originalTitleFile) {
+        # 恢复到原始标题
+        $originalTitle = Get-Content $originalTitleFile -Raw -Encoding UTF8 | ForEach-Object { $_.Trim() }
+        $Host.UI.RawUI.WindowTitle = $originalTitle
+
+        # 清理原始标题文件
+        Remove-Item $originalTitleFile -Force -ErrorAction SilentlyContinue
+    } else {
+        # 回退到默认逻辑
+        $title = "[-] Bye - $projectName"
+        Set-NotificationVisual -State "default" -Title $title | Out-Null
+
+        # Brief display then reset title
+        Start-Sleep -Milliseconds 500
+        Reset-TerminalVisual | Out-Null
+    }
 
     # Clean up state file for this session
     Remove-StateFile

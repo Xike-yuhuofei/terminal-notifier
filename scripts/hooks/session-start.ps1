@@ -51,16 +51,17 @@ try {
     # Clean up old state files
     Clear-OldStateFiles -MaxAgeHours 24
 
-    # 🔴 启动环境名显示（GLM/CCClub）在终端标题中
-    if ($env:CLAUDE_ENV_NAME) {
-        # 调试：立即设置标题验证环境变量
-        $projectName = Split-Path -Leaf $cwd
-        $Host.UI.RawUI.WindowTitle = "[$($env:CLAUDE_ENV_NAME)] $projectName - Hook Loaded"
-
-        Start-Sleep -Seconds 1  # 显示 1 秒让用户看到
-
-        Enable-EnvironmentNameDisplay
+    # 保存 ccs 设置的原始标题（供 Notification 和 SessionEnd 使用）
+    $stateDir = Join-Path $ModuleRoot ".states"
+    if (-not (Test-Path $stateDir)) {
+        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
     }
+
+    $originalTitleFile = Join-Path $stateDir "original-title.txt"
+    $currentTitle = $Host.UI.RawUI.WindowTitle
+
+    # 保存原始标题到文件
+    $currentTitle | Out-File -FilePath $originalTitleFile -Encoding UTF8 -Force
 
     # Output result for Claude Code
     $output = @{

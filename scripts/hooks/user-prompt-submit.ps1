@@ -1,12 +1,12 @@
 # user-prompt-submit.ps1
 # Claude Code Hook: UserPromptSubmit
-# 在用户提交新提示时清除 Stop 标题
+# 在用户提交新提示时清除标题
 #
 # 工作原理：
-# - 检查是否存在 Stop Hook 创建的持久化状态文件
-# - 如果存在，删除状态文件，让标题自然恢复
-# - 这样可以清除 "[⚠️] 需要输入" 这样的 Stop 标题
-
+# 1. Stop/Notification Hook 将标题写入状态文件
+# 2. UserPromptSubmit Hook 在用户提交提示时删除状态文件
+# 3. 标题自然恢复，不再显示 [⚠️] 或 [📢]
+#
 #Requires -Version 5.1
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "SilentlyContinue"
@@ -24,28 +24,13 @@ try {
     $inputJson = [Console]::In.ReadToEnd()
     $hookData = $inputJson | ConvertFrom-Json
 
-    $cwd = $hookData.cwd
-    $projectName = Split-Path -Leaf $cwd
-
-    # 检查 Stop Hook 创建的持久化状态文件
+    # 检查持久化标题状态文件
     $stateDir = Join-Path $ModuleRoot ".states"
-    $titleFile = Join-Path $stateDir "stop-title.txt"
+    $titleFile = Join-Path $stateDir "persistent-title.txt"
 
     if (Test-Path $titleFile) {
-        try {
-            # 读取标题数据
-            $titleData = Get-Content $titleFile -Raw | ConvertFrom-Json
-
-            # 删除状态文件（这会清除 Stop 标题）
-            Remove-Item $titleFile -Force -ErrorAction SilentlyContinue
-
-            # 可选：设置一个恢复标题，或者让系统自然恢复
-            # 这里选择让系统自然恢复，不设置任何标题
-        }
-        catch {
-            # 状态文件损坏，删除
-            Remove-Item $titleFile -Force -ErrorAction SilentlyContinue
-        }
+        # 用户提交新提示，清除所有标题（不管是 Stop 还是 Notification）
+        Remove-Item $titleFile -Force -ErrorAction SilentlyContinue
     }
 
     exit 0
