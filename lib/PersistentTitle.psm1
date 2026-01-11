@@ -133,10 +133,27 @@ function Clear-PersistentTitle {
         Remove-Item -Path $persistentTitleActiveFile -Force -ErrorAction SilentlyContinue
     }
 
-    # 恢复默认标题
-    $currentDir = Split-Path -Leaf (Get-Location).Path
-    $defaultTitle = "[Ready] - $currentDir"
-    Set-TermTitleLegacy -Title $defaultTitle | Out-Null
+    # 尝试读取并恢复原始标题（ccs设置的标题）
+    $originalTitleFile = Join-Path $stateDir "original-title.txt"
+    if (Test-Path $originalTitleFile) {
+        $originalTitle = Get-Content $originalTitleFile -Raw -Encoding UTF8 | ForEach-Object { $_.Trim() }
+        if ($originalTitle) {
+            # 使用原始标题（ccs设置的标题）
+            $currentDir = Split-Path -Leaf (Get-Location).Path
+            $restoredTitle = "[$originalTitle] Ready - $currentDir"
+            Set-TermTitleLegacy -Title $restoredTitle | Out-Null
+        } else {
+            # 回退到默认标题
+            $currentDir = Split-Path -Leaf (Get-Location).Path
+            $defaultTitle = "[Ready] - $currentDir"
+            Set-TermTitleLegacy -Title $defaultTitle | Out-Null
+        }
+    } else {
+        # 没有原始标题文件，使用默认标题
+        $currentDir = Split-Path -Leaf (Get-Location).Path
+        $defaultTitle = "[Ready] - $currentDir"
+        Set-TermTitleLegacy -Title $defaultTitle | Out-Null
+    }
 
     # 恢复默认标签页颜色（如果支持OSC）
     if (Test-OscSupport) {
