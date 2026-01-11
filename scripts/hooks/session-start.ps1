@@ -18,7 +18,8 @@ Import-Module (Join-Path $LibPath "HookBase.psm1") -Force -ErrorAction SilentlyC
 Import-HookModules -LibPath $LibPath -Modules @(
     "StateManager",
     "OscSender",
-    "PersistentTitle"
+    "PersistentTitle",
+    "TabTitleManager"
 )
 
 try {
@@ -36,8 +37,28 @@ try {
     # Initialize state manager with session info
     Initialize-StateManager -SessionId $sessionId -ProjectName $projectName | Out-Null
 
-    # SessionStart 静默模式：不更新终端标题和标签色
-    # 仅记录状态到 JSON（用于多窗口协调）
+    # 设置标题为 [ Running ] 窗口名（第一次标题修改）
+    $windowName = Get-WindowDisplayName
+    $runningTitle = "[ Running ] $windowName"
+    
+    # === 双重标题设置策略（参考Notification Hook）===
+    try {
+        # 方法1: 使用OSC转义序列
+        Set-TabTitle -Title $runningTitle
+        
+        # 方法2: 直接设置RawUI标题
+        $Host.UI.RawUI.WindowTitle = $runningTitle
+        
+        # 方法3: 输出OSC序列（备用方法）
+        $ESC = [char]27
+        $BEL = [char]7
+        Write-Host "$ESC]0;$runningTitle$BEL" -NoNewline
+    }
+    catch {
+        # 忽略标题设置失败
+    }
+    
+    # 记录状态到 JSON（用于多窗口协调）
     switch ($source) {
         "startup" {
             Set-CurrentState -State "blue" -Reason "Session started" -ProjectName $projectName
@@ -59,18 +80,18 @@ try {
     # 保存 ccs 设置的原始标题（供 Notification 和 SessionEnd 使用）
     if ($env:CLAUDE_WINDOW_NAME) {
         Set-OriginalTitle -ModuleRoot $ModuleRoot -Title $env:CLAUDE_WINDOW_NAME
-
-        # 设置会话开始标题（显示自定义标题）
-        $sessionTitle = "[$($env:CLAUDE_WINDOW_NAME)] Ready - $projectName"
-        Set-PersistentTitle -Title $sessionTitle -State "blue" -Duration 0
     } else {
         $currentTitle = $Host.UI.RawUI.WindowTitle
         Set-OriginalTitle -ModuleRoot $ModuleRoot -Title $currentTitle
-
-        # 设置默认会话开始标题
-        $sessionTitle = "[Ready] - $projectName"
-        Set-PersistentTitle -Title $sessionTitle -State "blue" -Duration 0
     }
+
+    # 保存当前标题到文件，供其他hooks使用
+    $stateDir = Join-Path $ModuleRoot ".states"
+    if (-not (Test-Path $stateDir)) {
+        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+    }
+    $currentTitleFile = Join-Path $stateDir "current-title.txt"
+    $runningTitle | Out-File -FilePath $currentTitleFile -Force -Encoding UTF8
 
     # Output result for Claude Code
     $output = @{

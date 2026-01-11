@@ -223,11 +223,8 @@ function Build-NotificationTitle {
     if ($OriginalTitle) {
         return "[📢] $OriginalTitle"
     }
-    elseif ($WindowName -and $WindowName -ne $ProjectName) {
-        return "[📢 $WindowName] 新通知 - $ProjectName"
-    }
     else {
-        return "[📢] 新通知 - $ProjectName"
+        return "[📢] $WindowName"
     }
 }
 
@@ -252,12 +249,7 @@ function Build-StopTitle {
         [string]$ProjectName
     )
 
-    if ($WindowName -and $WindowName -ne $ProjectName) {
-        return "[⚠️ $WindowName] 需要输入 - $ProjectName"
-    }
-    else {
-        return "[⚠️] 需要输入 - $ProjectName"
-    }
+    return "[📢] $WindowName"
 }
 
 function Invoke-ToastWithFallback {

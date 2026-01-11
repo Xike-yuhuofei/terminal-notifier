@@ -42,11 +42,19 @@ try {
         $Host.UI.RawUI.WindowTitle = $originalTitle
 
         # 清理原始标题文件
-        Remove-OriginalTitle -ModuleRoot $ModuleRoot
-    } else {
-        # 回退到默认逻辑
-        $title = "[-] Bye - $projectName"
-        Set-NotificationVisual -State "default" -Title $title | Out-Null
+    Remove-OriginalTitle -ModuleRoot $ModuleRoot
+} else {
+    # 回退到默认逻辑
+    $title = "[-] Bye - $projectName"
+    Set-NotificationVisual -State "default" -Title $title | Out-Null
+}
+
+# 清理第一次运行标记文件，确保下次启动能重新设置标题
+$stateDir = Join-Path $ModuleRoot ".states"
+$firstRunFile = Join-Path $stateDir "first-run.txt"
+if (Test-Path $firstRunFile) {
+    Remove-Item $firstRunFile -Force -ErrorAction SilentlyContinue
+}
 
         # Brief display then reset title
         Start-Sleep -Milliseconds 500
