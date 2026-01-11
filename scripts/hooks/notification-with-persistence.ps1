@@ -17,59 +17,29 @@ $ScriptDir = Split-Path -Parent $PSCommandPath
 $ModuleRoot = Resolve-Path (Join-Path $ScriptDir "../..")
 $LibPath = Join-Path $ModuleRoot "lib"
 
-# Import modules
-Import-Module (Join-Path $LibPath "NotificationEnhancements.psm1") -Force -ErrorAction SilentlyContinue
-Import-Module (Join-Path $LibPath "ToastNotifier.psm1") -Force -ErrorAction SilentlyContinue
-Import-Module (Join-Path $LibPath "TabTitleManager.psm1") -Force -ErrorAction SilentlyContinue
+# Import HookBase module first
+Import-Module (Join-Path $LibPath "HookBase.psm1") -Force -ErrorAction SilentlyContinue
+
+# Import other required modules
+Import-HookModules -LibPath $LibPath -Modules @(
+    "NotificationEnhancements",
+    "ToastNotifier",
+    "TabTitleManager"
+)
 
 try {
-    # Read hook input from stdin
+    # Initialize environment
     $inputJson = [Console]::In.ReadToEnd()
     $hookData = $inputJson | ConvertFrom-Json
-
     $cwd = $hookData.cwd
     $projectName = Split-Path -Leaf $cwd
 
-    # Get custom window name (set by ccs command)
-    $windowName = ""
-    try {
-        $windowName = Get-WindowDisplayName
+    # Get window name with fallback
+    $windowName = Get-WindowNameWithFallback -ProjectName $projectName -ModuleRoot $ModuleRoot
 
-        # 如果Get-WindowDisplayName返回项目名称，尝试从保存的文件读取自定义标题
-        if ($windowName -eq $projectName) {
-            $stateDir = Join-Path $ModuleRoot ".states"
-            $originalTitleFile = Join-Path $stateDir "original-title.txt"
-
-            if (Test-Path $originalTitleFile) {
-                $savedTitle = Get-Content $originalTitleFile -Raw -Encoding UTF8 | ForEach-Object { $_.Trim() }
-                if ($savedTitle -and $savedTitle -ne "" -and $savedTitle -ne $projectName) {
-                    $windowName = $savedTitle
-                }
-            }
-        }
-    }
-    catch {
-        # Fallback to project name
-        $windowName = $projectName
-    }
-
-    # === 1. 构建标题 ===
-    # 读取 SessionStart 保存的原始标题
-    $stateDir = Join-Path $ModuleRoot ".states"
-    $originalTitleFile = Join-Path $stateDir "original-title.txt"
-
-    if (Test-Path $originalTitleFile) {
-        # 使用原始标题（ccs 设置的）
-        $originalTitle = Get-Content $originalTitleFile -Raw -Encoding UTF8 | ForEach-Object { $_.Trim() }
-        $title = "[📢] $originalTitle"
-    } else {
-        # 回退到默认逻辑
-        if ($windowName -and $windowName -ne $projectName) {
-            $title = "[📢 $windowName] 新通知 - $projectName"
-        } else {
-            $title = "[📢] 新通知 - $projectName"
-        }
-    }
+    # Build title
+    $originalTitle = Get-OriginalTitle -ModuleRoot $ModuleRoot
+    $title = Build-NotificationTitle -WindowName $windowName -ProjectName $projectName -OriginalTitle $originalTitle
 
     # === 2. 尝试即时设置标题（可能无效，因为是在子进程中）===
     try {
@@ -117,17 +87,12 @@ try {
     Invoke-TerminalBell -Times 1 -SoundType 'Asterisk'
 
     # === 5. 发送 Toast 通知 ===
-    try {
-        # 如果有原始标题，传递给 Toast 通知
-        if (Test-Path $originalTitleFile) {
-            $originalTitle = Get-Content $originalTitleFile -Raw -Encoding UTF8 | ForEach-Object { $_.Trim() }
+    Invoke-ToastWithFallback -ScriptBlock {
+        if ($originalTitle) {
             Send-NotificationToast -WindowName $originalTitle -ProjectName $projectName
         } else {
             Send-NotificationToast -WindowName $windowName -ProjectName $projectName
         }
-    }
-    catch {
-        # Toast 失败不应阻止 Hook 执行
     }
 
     exit 0

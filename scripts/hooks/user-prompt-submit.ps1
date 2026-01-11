@@ -16,8 +16,13 @@ $ScriptDir = Split-Path -Parent $PSCommandPath
 $ModuleRoot = Resolve-Path (Join-Path $ScriptDir "../..")
 $LibPath = Join-Path $ModuleRoot "lib"
 
-# Import modules
-Import-Module (Join-Path $LibPath "PersistentTitle.psm1") -Force -ErrorAction SilentlyContinue
+# Import HookBase module first
+Import-Module (Join-Path $LibPath "HookBase.psm1") -Force -ErrorAction SilentlyContinue
+
+# Import other required modules
+Import-HookModules -LibPath $LibPath -Modules @(
+    "PersistentTitle"
+)
 
 try {
     # Read hook input from stdin
@@ -33,7 +38,7 @@ try {
     if (Test-Path $titleFile) {
         Remove-Item $titleFile -Force -ErrorAction SilentlyContinue
     }
-    
+
     # Periodic cleanup (1 in 10 chance to reduce overhead)
     $cleanupRandom = Get-Random -Minimum 1 -Maximum 11
     if ($cleanupRandom -eq 1) {

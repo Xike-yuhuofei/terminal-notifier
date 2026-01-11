@@ -11,10 +11,15 @@ $ScriptDir = Split-Path -Parent $PSCommandPath
 $ModuleRoot = Resolve-Path (Join-Path $ScriptDir "../..")
 $LibPath = Join-Path $ModuleRoot "lib"
 
-# Import modules
-Import-Module (Join-Path $LibPath "StateManager.psm1") -Force
-Import-Module (Join-Path $LibPath "OscSender.psm1") -Force
-Import-Module (Join-Path $LibPath "PersistentTitle.psm1") -Force -ErrorAction SilentlyContinue
+# Import HookBase module first
+Import-Module (Join-Path $LibPath "HookBase.psm1") -Force -ErrorAction SilentlyContinue
+
+# Import other required modules
+Import-HookModules -LibPath $LibPath -Modules @(
+    "StateManager",
+    "OscSender",
+    "PersistentTitle"
+)
 
 try {
     # Read hook input from stdin
@@ -52,23 +57,15 @@ try {
     Clear-OldStateFiles -MaxAgeHours 4
 
     # 保存 ccs 设置的原始标题（供 Notification 和 SessionEnd 使用）
-    $stateDir = Join-Path $ModuleRoot ".states"
-    if (-not (Test-Path $stateDir)) {
-        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
-    }
-
-    $originalTitleFile = Join-Path $stateDir "original-title.txt"
-
-    # 优先保存 CLAUDE_WINDOW_NAME，否则保存当前标题
     if ($env:CLAUDE_WINDOW_NAME) {
-        $env:CLAUDE_WINDOW_NAME | Out-File -FilePath $originalTitleFile -Encoding UTF8 -Force
+        Set-OriginalTitle -ModuleRoot $ModuleRoot -Title $env:CLAUDE_WINDOW_NAME
 
         # 设置会话开始标题（显示自定义标题）
         $sessionTitle = "[$($env:CLAUDE_WINDOW_NAME)] Ready - $projectName"
         Set-PersistentTitle -Title $sessionTitle -State "blue" -Duration 0
     } else {
         $currentTitle = $Host.UI.RawUI.WindowTitle
-        $currentTitle | Out-File -FilePath $originalTitleFile -Encoding UTF8 -Force
+        Set-OriginalTitle -ModuleRoot $ModuleRoot -Title $currentTitle
 
         # 设置默认会话开始标题
         $sessionTitle = "[Ready] - $projectName"

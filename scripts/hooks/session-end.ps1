@@ -11,9 +11,14 @@ $ScriptDir = Split-Path -Parent $PSCommandPath
 $ModuleRoot = Resolve-Path (Join-Path $ScriptDir "../..")
 $LibPath = Join-Path $ModuleRoot "lib"
 
-# Import modules
-Import-Module (Join-Path $LibPath "StateManager.psm1") -Force
-Import-Module (Join-Path $LibPath "OscSender.psm1") -Force
+# Import HookBase module first
+Import-Module (Join-Path $LibPath "HookBase.psm1") -Force -ErrorAction SilentlyContinue
+
+# Import other required modules
+Import-HookModules -LibPath $LibPath -Modules @(
+    "StateManager",
+    "OscSender"
+)
 
 try {
     # Read hook input from stdin
@@ -30,16 +35,14 @@ try {
     Set-CurrentState -State "black" -Reason "Session ended" -ProjectName $projectName
 
     # 读取并恢复原始标题（ccs 设置的）
-    $stateDir = Join-Path $ModuleRoot ".states"
-    $originalTitleFile = Join-Path $stateDir "original-title.txt"
+    $originalTitle = Get-OriginalTitle -ModuleRoot $ModuleRoot
 
-    if (Test-Path $originalTitleFile) {
+    if ($originalTitle) {
         # 恢复到原始标题
-        $originalTitle = Get-Content $originalTitleFile -Raw -Encoding UTF8 | ForEach-Object { $_.Trim() }
         $Host.UI.RawUI.WindowTitle = $originalTitle
 
         # 清理原始标题文件
-        Remove-Item $originalTitleFile -Force -ErrorAction SilentlyContinue
+        Remove-OriginalTitle -ModuleRoot $ModuleRoot
     } else {
         # 回退到默认逻辑
         $title = "[-] Bye - $projectName"
@@ -52,7 +55,7 @@ try {
 
     # Clean up state file for this session
     Remove-StateFile
-    
+
     # Clean up old state files from other sessions
     Clear-OldStateFiles -MaxAgeHours 4
 
