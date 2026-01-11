@@ -17,19 +17,20 @@ $ModuleRoot = Resolve-Path (Join-Path $ScriptDir "../..")
 $LibPath = Join-Path $ModuleRoot "lib"
 
 # Import modules
-Import-Module (Join-Path $LibPath "TabTitleManager.psm1") -Force -ErrorAction SilentlyContinue
+Import-Module (Join-Path $LibPath "PersistentTitle.psm1") -Force -ErrorAction SilentlyContinue
 
 try {
     # Read hook input from stdin
     $inputJson = [Console]::In.ReadToEnd()
     $hookData = $inputJson | ConvertFrom-Json
 
-    # 检查持久化标题状态文件
+    # 清除持久化标题（恢复默认显示）
+    Clear-PersistentTitle
+
+    # 清理旧的状态文件（向后兼容）
     $stateDir = Join-Path $ModuleRoot ".states"
     $titleFile = Join-Path $stateDir "persistent-title.txt"
-
     if (Test-Path $titleFile) {
-        # 用户提交新提示，清除所有标题（不管是 Stop 还是 Notification）
         Remove-Item $titleFile -Force -ErrorAction SilentlyContinue
     }
     

@@ -58,10 +58,14 @@ try {
     }
 
     $originalTitleFile = Join-Path $stateDir "original-title.txt"
-    $currentTitle = $Host.UI.RawUI.WindowTitle
 
-    # 保存原始标题到文件
-    $currentTitle | Out-File -FilePath $originalTitleFile -Encoding UTF8 -Force
+    # 优先保存 CLAUDE_WINDOW_NAME，否则保存当前标题
+    if ($env:CLAUDE_WINDOW_NAME) {
+        $env:CLAUDE_WINDOW_NAME | Out-File -FilePath $originalTitleFile -Encoding UTF8 -Force
+    } else {
+        $currentTitle = $Host.UI.RawUI.WindowTitle
+        $currentTitle | Out-File -FilePath $originalTitleFile -Encoding UTF8 -Force
+    }
 
     # Output result for Claude Code
     $output = @{

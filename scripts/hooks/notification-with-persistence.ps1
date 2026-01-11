@@ -58,46 +58,13 @@ try {
         }
     }
 
-    # === 2. 尝试即时设置标题（可能无效，因为是在子进程中）===
+    # === 2. 设置持久化标题（使用 PersistentTitle 模块）===
     try {
-        $Host.UI.RawUI.WindowTitle = $title
-        $ESC = [char]27
-        $BEL = [char]7
-        Write-Host "$ESC]0;$title$BEL" -NoNewline
+        # 使用 PersistentTitle 模块设置标题（后台线程持续刷新，5秒后自动清除）
+        Set-PersistentTitle -Title $title -State "yellow" -Duration 5
     }
     catch {
-        # 忽略标题设置失败
-    }
-
-    # === 3. 写入持久化状态文件（供 UserPromptSubmit Hook 使用）===
-    try {
-        $stateDir = Join-Path $ModuleRoot ".states"
-        if (-not (Test-Path $stateDir)) {
-            New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
-        }
-
-        $titleFile = Join-Path $stateDir "persistent-title.txt"
-        $titleData = @{
-            title = $title
-            hookType = "Notification"
-            timestamp = (Get-Date).ToString("o")
-        } | ConvertTo-Json -Compress
-
-        $titleData | Out-File -FilePath $titleFile -Encoding UTF8 -Force
-
-        # 启动后台任务在5秒后清除标题
-        $clearScript = {
-            param($titleFilePath)
-            Start-Sleep -Seconds 5
-            if (Test-Path $titleFilePath) {
-                Remove-Item $titleFilePath -Force -ErrorAction SilentlyContinue
-            }
-        }
-
-        Start-Job -ScriptBlock $clearScript -ArgumentList $titleFile -Name "ClearNotificationTitle" -ErrorAction SilentlyContinue | Out-Null
-    }
-    catch {
-        # 状态文件写入失败不应阻止 Hook 执行
+        # 标题设置失败不应阻止 Hook 执行
     }
 
     # === 4. 播放音效 ===
@@ -105,13 +72,8 @@ try {
 
     # === 5. 发送 Toast 通知 ===
     try {
-        # 如果有原始标题，传递给 Toast 通知
-        if (Test-Path $originalTitleFile) {
-            $originalTitle = Get-Content $originalTitleFile -Raw -Encoding UTF8 | ForEach-Object { $_.Trim() }
-            Send-NotificationToast -WindowName $originalTitle -ProjectName $projectName
-        } else {
-            Send-NotificationToast -WindowName $windowName -ProjectName $projectName
-        }
+        # 总是使用 $windowName（来自 CLAUDE_WINDOW_NAME 环境变量）
+        Send-NotificationToast -WindowName $windowName -ProjectName $projectName
     }
     catch {
         # Toast 失败不应阻止 Hook 执行
