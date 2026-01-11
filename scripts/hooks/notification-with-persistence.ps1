@@ -41,10 +41,21 @@ try {
     }
 
     # === 1. 构建标题 ===
-    if ($windowName -and $windowName -ne $projectName) {
-        $title = "[📢 $windowName] 新通知 - $projectName"
+    # 读取 SessionStart 保存的原始标题
+    $stateDir = Join-Path $ModuleRoot ".states"
+    $originalTitleFile = Join-Path $stateDir "original-title.txt"
+
+    if (Test-Path $originalTitleFile) {
+        # 使用原始标题（ccs 设置的）
+        $originalTitle = Get-Content $originalTitleFile -Raw -Encoding UTF8 | ForEach-Object { $_.Trim() }
+        $title = "[📢] $originalTitle"
     } else {
-        $title = "[📢] 新通知 - $projectName"
+        # 回退到默认逻辑
+        if ($windowName -and $windowName -ne $projectName) {
+            $title = "[📢 $windowName] 新通知 - $projectName"
+        } else {
+            $title = "[📢] 新通知 - $projectName"
+        }
     }
 
     # === 2. 尝试即时设置标题（可能无效，因为是在子进程中）===
@@ -94,7 +105,13 @@ try {
 
     # === 5. 发送 Toast 通知 ===
     try {
-        Send-NotificationToast -WindowName $windowName -ProjectName $projectName
+        # 如果有原始标题，传递给 Toast 通知
+        if (Test-Path $originalTitleFile) {
+            $originalTitle = Get-Content $originalTitleFile -Raw -Encoding UTF8 | ForEach-Object { $_.Trim() }
+            Send-NotificationToast -WindowName $originalTitle -ProjectName $projectName
+        } else {
+            Send-NotificationToast -WindowName $windowName -ProjectName $projectName
+        }
     }
     catch {
         # Toast 失败不应阻止 Hook 执行
