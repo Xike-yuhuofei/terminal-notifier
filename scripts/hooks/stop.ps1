@@ -25,15 +25,27 @@ $hookBasePath = Join-Path $LibPath "HookBase.psm1"
 "[$ts] Stop Hook: Importing HookBase from $hookBasePath" | Out-File -FilePath $earlyDebugLog -Append -Encoding UTF8
 Import-Module $hookBasePath -Force -Global -ErrorAction SilentlyContinue
 
-# Import other required modules DIRECTLY (not via Import-HookModules to avoid scope issues)
+# Import other required modules with proper error handling
 $modulesToImport = @("NotificationEnhancements", "ToastNotifier", "PersistentTitle", "StateManager", "TabTitleManager")
+$importedModules = @()
 foreach ($mod in $modulesToImport) {
     $modPath = Join-Path $LibPath "$mod.psm1"
     if (Test-Path $modPath) {
-        Import-Module $modPath -Force -Global -ErrorAction SilentlyContinue
+        try {
+            Import-Module $modPath -Force -Global -ErrorAction Stop
+            $importedModules += $mod
+        }
+        catch {
+            # Log module import failure but don't fail the hook
+            "[$ts] Stop Hook: Failed to import $mod : $($_.Exception.Message)" | Out-File -FilePath $earlyDebugLog -Append -Encoding UTF8
+        }
+    }
+    else {
+        "[$ts] Stop Hook: Module file not found: $modPath" | Out-File -FilePath $earlyDebugLog -Append -Encoding UTF8
     }
 }
-"[$ts] Stop Hook: Modules imported, Invoke-TerminalBell exists: $(Get-Command Invoke-TerminalBell -ErrorAction SilentlyContinue | Out-String)" | Out-File -FilePath $earlyDebugLog -Append -Encoding UTF8
+"[$ts] Stop Hook: Successfully imported modules: $($importedModules -join ', ')" | Out-File -FilePath $earlyDebugLog -Append -Encoding UTF8
+"[$ts] Stop Hook: Invoke-TerminalBell exists: $(Get-Command Invoke-TerminalBell -ErrorAction SilentlyContinue | Out-String)" | Out-File -FilePath $earlyDebugLog -Append -Encoding UTF8
 
 try {
     # === DEBUG LOGGING START ===
@@ -80,19 +92,37 @@ try {
         # Title setting failure should not block Hook execution
     }
 
-    # Play sound
-    Invoke-TerminalBell -Times 2 -SoundType 'Exclamation'
-
-    # DEBUG: Log bell
-    "[$timestamp] Bell played" | Out-File -FilePath $debugLog -Append -Encoding UTF8
-
-    # Send toast notification
-    Invoke-ToastWithFallback -ScriptBlock {
-        Send-StopToast -WindowName $windowName -ProjectName $projectName
+    # Play sound with error handling
+    try {
+        if (Get-Command Invoke-TerminalBell -ErrorAction SilentlyContinue) {
+            Invoke-TerminalBell -Times 1 -SoundType 'Exclamation'
+            "[$timestamp] Bell played successfully (1 time)" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+        }
+        else {
+            "[$timestamp] Bell function not available, skipping sound" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+        }
+    }
+    catch {
+        "[$timestamp] Bell play failed: $($_.Exception.Message)" | Out-File -FilePath $debugLog -Append -Encoding UTF8
     }
 
-    # DEBUG: Log toast and end
-    "[$timestamp] Toast sent" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+    # Send toast notification with error handling
+    try {
+        if (Get-Command Invoke-ToastWithFallback -ErrorAction SilentlyContinue) {
+            Invoke-ToastWithFallback -ScriptBlock {
+                Send-StopToast -WindowName $windowName -ProjectName $projectName
+            }
+            "[$timestamp] Toast sent successfully" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+        }
+        else {
+            "[$timestamp] Toast function not available, skipping notification" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+        }
+    }
+    catch {
+        "[$timestamp] Toast send failed: $($_.Exception.Message)" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+    }
+
+    # DEBUG: Log end
     "[$timestamp] === Stop Hook END ===" | Out-File -FilePath $debugLog -Append -Encoding UTF8
 
     exit 0

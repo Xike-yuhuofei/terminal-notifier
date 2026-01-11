@@ -20,14 +20,34 @@ $LibPath = Join-Path $ModuleRoot "lib"
 # Import HookBase module first
 Import-Module (Join-Path $LibPath "HookBase.psm1") -Force -Global -ErrorAction SilentlyContinue
 
-# Import other required modules DIRECTLY (not via Import-HookModules to avoid scope issues)
+# Import other required modules with proper error handling
 $modulesToImport = @("NotificationEnhancements", "ToastNotifier", "TabTitleManager")
+$importedModules = @()
 foreach ($mod in $modulesToImport) {
     $modPath = Join-Path $LibPath "$mod.psm1"
     if (Test-Path $modPath) {
-        Import-Module $modPath -Force -Global -ErrorAction SilentlyContinue
+        try {
+            Import-Module $modPath -Force -Global -ErrorAction Stop
+            $importedModules += $mod
+        }
+        catch {
+            # Log module import failure but don't fail the hook
+            $debugLog = Join-Path $ModuleRoot ".states/hook-debug.log"
+            $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+            "[$ts] Notification Hook: Failed to import $mod : $($_.Exception.Message)" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+        }
+    }
+    else {
+        $debugLog = Join-Path $ModuleRoot ".states/hook-debug.log"
+        $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+        "[$ts] Notification Hook: Module file not found: $modPath" | Out-File -FilePath $debugLog -Append -Encoding UTF8
     }
 }
+
+# Log successful imports
+$debugLog = Join-Path $ModuleRoot ".states/hook-debug.log"
+$ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+"[$ts] Notification Hook: Successfully imported modules: $($importedModules -join ', ')" | Out-File -FilePath $debugLog -Append -Encoding UTF8
 
 try {
     # === DEBUG LOGGING START ===
@@ -109,23 +129,41 @@ try {
         # 状态文件写入失败不应阻止 Hook 执行
     }
 
-    # === 4. 播放音效 ===
-    Invoke-TerminalBell -Times 1 -SoundType 'Asterisk'
-
-    # DEBUG: Log bell
-    "[$timestamp] Bell played" | Out-File -FilePath $debugLog -Append -Encoding UTF8
-
-    # === 5. 发送 Toast 通知 ===
-    Invoke-ToastWithFallback -ScriptBlock {
-        if ($originalTitle) {
-            Send-NotificationToast -WindowName $originalTitle -ProjectName $projectName
-        } else {
-            Send-NotificationToast -WindowName $windowName -ProjectName $projectName
+    # === 4. 播放音效（带错误处理）===
+    try {
+        if (Get-Command Invoke-TerminalBell -ErrorAction SilentlyContinue) {
+            Invoke-TerminalBell -Times 1 -SoundType 'Asterisk'
+            "[$timestamp] Bell played successfully" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+        }
+        else {
+            "[$timestamp] Bell function not available, skipping sound" | Out-File -FilePath $debugLog -Append -Encoding UTF8
         }
     }
+    catch {
+        "[$timestamp] Bell play failed: $($_.Exception.Message)" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+    }
 
-    # DEBUG: Log toast
-    "[$timestamp] Toast sent" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+    # === 5. 发送 Toast 通知（带错误处理）===
+    try {
+        if (Get-Command Invoke-ToastWithFallback -ErrorAction SilentlyContinue) {
+            Invoke-ToastWithFallback -ScriptBlock {
+                if ($originalTitle) {
+                    Send-NotificationToast -WindowName $originalTitle -ProjectName $projectName
+                } else {
+                    Send-NotificationToast -WindowName $windowName -ProjectName $projectName
+                }
+            }
+            "[$timestamp] Toast sent successfully" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+        }
+        else {
+            "[$timestamp] Toast function not available, skipping notification" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+        }
+    }
+    catch {
+        "[$timestamp] Toast send failed: $($_.Exception.Message)" | Out-File -FilePath $debugLog -Append -Encoding UTF8
+    }
+
+    # DEBUG: Log end
     "[$timestamp] === Notification Hook END ===" | Out-File -FilePath $debugLog -Append -Encoding UTF8
 
     exit 0
