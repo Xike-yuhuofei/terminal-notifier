@@ -52,33 +52,33 @@ def send_toast_notification(title: str, message: str = "") -> bool:
 
 def send_stop_toast(window_name: str, project_name: str) -> bool:
     """
-    发送停止通知（兼容原始Send-StopToast函数）
-    
+    发送停止通知
+
     Args:
-        window_name: 窗口名称
-        project_name: 项目名称
-        
+        window_name: CCS启动时设置的自定义标题
+        project_name: 项目名称（未使用）
+
     Returns:
         bool: 通知发送是否成功
     """
     title = f"[⚠️] {window_name}"
-    message = f"项目 {project_name} 需要您的注意"
+    message = "Stop Hook"
     return send_toast_notification(title, message)
 
 
 def send_notification_toast(window_name: str, project_name: str) -> bool:
     """
-    发送普通通知（兼容原始Send-NotificationToast函数）
-    
+    发送普通通知
+
     Args:
-        window_name: 窗口名称
-        project_name: 项目名称
-        
+        window_name: CCS启动时设置的自定义标题
+        project_name: 项目名称（未使用）
+
     Returns:
         bool: 通知发送是否成功
     """
     title = f"[📢] {window_name}"
-    message = f"项目 {project_name} 有新消息"
+    message = "Notification Hook"
     return send_toast_notification(title, message)
 
 
